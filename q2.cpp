@@ -1,91 +1,69 @@
 #include <iostream>
 #include <vector>
-#include <algorithm>
+#include <queue>
+#include <unordered_map>
+#include <climits>
 
 using namespace std;
 
-class Edge {
-public:
-    int src, dest, weight;
-
-    Edge(int source, int destination, int w) {
-        src = source;
-        dest = destination;
-        weight = w;
-    }
-};
+typedef pair<int, int> pii;
 
 class Graph {
 public:
-    int V, E;
-    vector<Edge> edges;
+    unordered_map<int, vector<pii>> adjList;
 
-    Graph(int vertices, int edgesCount) {
-        V = vertices;
-        E = edgesCount;
-        edges.reserve(E);
-    }
-
-    void addEdge(int src, int dest, int weight) {
-        Edge edge(src, dest, weight);
-        edges.push_back(edge);
-    }
-
-   
-    int find(vector<int>& parent, int vertex) {
-        if (parent[vertex] == -1)
-            return vertex;
-        return find(parent, parent[vertex]);
-    }
-
-    
-    void unionSets(vector<int>& parent, int x, int y) {
-        int xSet = find(parent, x);
-        int ySet = find(parent, y);
-        parent[xSet] = ySet;
-    }
-
-    
-    void kruskalMST() {
-        vector<Edge> resultMST;
-        sort(edges.begin(), edges.end(), [](const Edge& a, const Edge& b) {
-            return a.weight < b.weight;
-        });
-
-        vector<int> parent(V, -1);
-
-        for (Edge edge : edges) {
-            int x = find(parent, edge.src);
-            int y = find(parent, edge.dest);
-
-            if (x != y) {
-                resultMST.push_back(edge);
-                unionSets(parent, x, y);
-            }
-        }
-
-        cout << "Minimum Spanning Tree (MST) edges:" << endl;
-        for (Edge edge : resultMST) {
-            cout << edge.src << " - " << edge.dest << " : " << edge.weight << endl;
-        }
+    void addEdge(int u, int v, int weight) {
+        adjList[u].push_back(make_pair(v, weight));
+        adjList[v].push_back(make_pair(u, weight)); 
     }
 };
 
-int main() {
-    int V, E;
-    cout << "Enter the number of vertices and edges: ";
-    cin >> V >> E;
+vector<int> dijkstra(Graph& graph, int initial) {
+    vector<int> shortestDistance(graph.adjList.size(), INT_MAX);
+    priority_queue<pii, vector<pii>, greater<pii>> minHeap;
 
-    Graph graph(V, E);
+    shortestDistance[initial] = 0;
+    minHeap.push(make_pair(0, initial));
 
-    cout << "Enter the edges (source, destination, weight):" << endl;
-    for (int i = 0; i < E; i++) {
-        int src, dest, weight;
-        cin >> src >> dest >> weight;
-        graph.addEdge(src, dest, weight);
+    while (!minHeap.empty()) {
+        int u = minHeap.top().second;
+        minHeap.pop();
+
+        for (auto neighbor : graph.adjList[u]) {
+            int v = neighbor.first;
+            int weight = neighbor.second;
+
+            if (shortestDistance[v] > shortestDistance[u] + weight) {
+                shortestDistance[v] = shortestDistance[u] + weight;
+                minHeap.push(make_pair(shortestDistance[v], v));
+            }
+        }
     }
 
-    graph.kruskalMST();
+    return shortestDistance;
+}
+
+int main() {
+    Graph graph;
+    int numNodes, numEdges;
+    cin >> numNodes >> numEdges;
+
+    for (int i = 0; i < numEdges; i++) {
+        int u, v, weight;
+        cin >> u >> v >> weight;
+        graph.addEdge(u, v, weight);
+    }
+
+    int initial, final;
+    cin >> initial >> final;
+
+    vector<int> distances = dijkstra(graph, initial);
+
+    if (distances[final] == INT_MAX) {
+        cout << "No path exists between " << initial << " and " << final << endl;
+    } else {
+        cout << "Shortest distance between " << initial << " and " << final << ": " << distances[final] << endl;
+    }
 
     return 0;
 }
